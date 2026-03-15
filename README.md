@@ -18,7 +18,8 @@ Employee attrition costs organizations significant time and money in rehiring an
 ## Live Demo
 
 > Run locally using the steps below, or see screenshots in `/assets`.
-
+## 🚀 Live Demo
+👉 [thejal-attrition-dashboard.streamlit.app](https://thejal-attrition-dashboard.streamlit.app)
 ---
 
 ## Results
