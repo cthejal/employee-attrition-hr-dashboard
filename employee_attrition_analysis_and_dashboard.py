@@ -345,7 +345,7 @@ def run_dashboard(csv_path='WA_Fn-UseC_-HR-Employee-Attrition.csv', model_path='
         st.subheader('Attrition proportion by Department')
         st.bar_chart(dept_prop)
 
-    model = load_model(model_path)
+   model = load_model(model_path)
 if model is None:
     st.info('Training model on first run — please wait...')
     X, y, numerical_cols, categorical_cols = preprocess_for_model(df)
@@ -357,8 +357,8 @@ if model is None:
     save_model(pipe, model_path)
     model = pipe
     st.success('Model trained and ready!')
-    else:
-        st.success('Loaded trained model: best_attrition_model.pkl')
+else:
+    st.success('Loaded trained model: best_attrition_model.pkl')
 
         features_df = df.copy()
         if 'Attrition' in features_df.columns:
