@@ -346,8 +346,17 @@ def run_dashboard(csv_path='WA_Fn-UseC_-HR-Employee-Attrition.csv', model_path='
         st.bar_chart(dept_prop)
 
     model = load_model(model_path)
-    if model is None:
-        st.warning('Trained model not found (best_attrition_model.pkl). KPIs will still be shown.')
+if model is None:
+    st.info('Training model on first run — please wait...')
+    X, y, numerical_cols, categorical_cols = preprocess_for_model(df)
+    preprocessor = build_preprocessor(numerical_cols, categorical_cols)
+    from sklearn.pipeline import Pipeline
+    from sklearn.ensemble import RandomForestClassifier
+    pipe = Pipeline([('preprocessor', preprocessor),('clf', RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42))])
+    pipe.fit(X, y)
+    save_model(pipe, model_path)
+    model = pipe
+    st.success('Model trained and ready!')
     else:
         st.success('Loaded trained model: best_attrition_model.pkl')
 
