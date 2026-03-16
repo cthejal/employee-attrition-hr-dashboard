@@ -346,78 +346,76 @@ def run_dashboard(csv_path='WA_Fn-UseC_-HR-Employee-Attrition.csv', model_path='
         st.bar_chart(dept_prop)
 
 model = load_model(model_path)
-if model is None:
-    st.info('Training model on first run — please wait...')
-    X, y, numerical_cols, categorical_cols = preprocess_for_model(df)
-    preprocessor = build_preprocessor(numerical_cols, categorical_cols)
-    from sklearn.pipeline import Pipeline
-    from sklearn.ensemble import RandomForestClassifier
-    pipe = Pipeline([('preprocessor', preprocessor),('clf', RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42))])
-    pipe.fit(X, y)
-    save_model(pipe, model_path)
-    model = pipe
-    st.success('Model trained and ready!')
-else:
-    st.success('Loaded trained model: best_attrition_model.pkl')
+    if model is None:
+        st.info('Training model on first run — please wait...')
+        X, y, numerical_cols, categorical_cols = preprocess_for_model(df)
+        preprocessor = build_preprocessor(numerical_cols, categorical_cols)
+        from sklearn.pipeline import Pipeline
+        from sklearn.ensemble import RandomForestClassifier
+        pipe = Pipeline([('preprocessor', preprocessor), ('clf', RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42))])
+        pipe.fit(X, y)
+        save_model(pipe, model_path)
+        model = pipe
+        st.success('Model trained and ready!')
+    else:
+        st.success('Loaded trained model: best_attrition_model.pkl')
 
-        features_df = df.copy()
-        if 'Attrition' in features_df.columns:
-            features_df = features_df.drop(columns=['Attrition'])
+    features_df = df.copy()
+    if 'Attrition' in features_df.columns:
+        features_df = features_df.drop(columns=['Attrition'])
 
-        try:
-            probs = model.predict_proba(features_df)[:, 1]
-            df['Attrition_Prob'] = probs
+    try:
+        probs = model.predict_proba(features_df)[:, 1]
+        df['Attrition_Prob'] = probs
 
-            st.subheader('Top 10 employees by predicted attrition risk')
-            if 'EmployeeNumber' in df.columns:
-                top10 = df.sort_values('Attrition_Prob', ascending=False).head(10)[['EmployeeNumber','Attrition_Prob','Department','JobRole','Age','MonthlyIncome']].fillna('')
-            else:
-                top10 = df.sort_values('Attrition_Prob', ascending=False).head(10)
-            st.dataframe(top10)
+        st.subheader('Top 10 employees by predicted attrition risk')
+        if 'EmployeeNumber' in df.columns:
+            top10 = df.sort_values('Attrition_Prob', ascending=False).head(10)[['EmployeeNumber', 'Attrition_Prob', 'Department', 'JobRole', 'Age', 'MonthlyIncome']].fillna('')
+        else:
+            top10 = df.sort_values('Attrition_Prob', ascending=False).head(10)
+        st.dataframe(top10)
 
-            st.subheader('Attrition probability distribution')
-            fig, ax = plt.subplots(figsize=(6,3))
-            ax.hist(probs, bins=30)
-            ax.set_xlabel('Predicted attrition probability')
-            ax.set_ylabel('Count')
-            st.pyplot(fig)
+        st.subheader('Attrition probability distribution')
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ax.hist(probs, bins=30)
+        ax.set_xlabel('Predicted attrition probability')
+        ax.set_ylabel('Count')
+        st.pyplot(fig)
 
-        except Exception as e:
-            st.error(f'Could not run predictions on dataset: {e}')
+    except Exception as e:
+        st.error(f'Could not run predictions on dataset: {e}')
 
-        st.markdown('---')
+    st.markdown('---')
 
-        st.subheader('Predict for one employee (fill features)')
-        with st.form('employee_form'):
-            age = st.number_input('Age', min_value=18, max_value=70, value=30)
-            monthly_income = st.number_input('MonthlyIncome', min_value=0, value=5000)
-            job_role = st.selectbox('JobRole', options=sorted(df['JobRole'].unique())) if 'JobRole' in df.columns else st.text_input('JobRole')
-            department = st.selectbox('Department', options=sorted(df['Department'].unique())) if 'Department' in df.columns else st.text_input('Department')
-            submit = st.form_submit_button('Predict')
+    st.subheader('Predict for one employee (fill features)')
+    with st.form('employee_form'):
+        age = st.number_input('Age', min_value=18, max_value=70, value=30)
+        monthly_income = st.number_input('MonthlyIncome', min_value=0, value=5000)
+        job_role = st.selectbox('JobRole', options=sorted(df['JobRole'].unique())) if 'JobRole' in df.columns else st.text_input('JobRole')
+        department = st.selectbox('Department', options=sorted(df['Department'].unique())) if 'Department' in df.columns else st.text_input('Department')
+        submit = st.form_submit_button('Predict')
 
-            if submit:
-                sample = df.drop(columns=['Attrition']) if 'Attrition' in df.columns else df.copy()
-                sample = sample.head(1).copy()
-                if 'Age' in sample.columns:
-                    sample.loc[:, 'Age'] = age
-                if 'MonthlyIncome' in sample.columns:
-                    sample.loc[:, 'MonthlyIncome'] = monthly_income
-                if 'JobRole' in sample.columns:
-                    sample.loc[:, 'JobRole'] = job_role
-                if 'Department' in sample.columns:
-                    sample.loc[:, 'Department'] = department
+        if submit:
+            sample = df.drop(columns=['Attrition']) if 'Attrition' in df.columns else df.copy()
+            sample = sample.head(1).copy()
+            if 'Age' in sample.columns:
+                sample.loc[:, 'Age'] = age
+            if 'MonthlyIncome' in sample.columns:
+                sample.loc[:, 'MonthlyIncome'] = monthly_income
+            if 'JobRole' in sample.columns:
+                sample.loc[:, 'JobRole'] = job_role
+            if 'Department' in sample.columns:
+                sample.loc[:, 'Department'] = department
 
-                try:
-                    prob = model.predict_proba(sample)[:, 1][0]
-                    st.write(f'Predicted probability of attrition: {prob:.2%}')
-                    st.write('Predicted class:', 'Yes' if prob > 0.5 else 'No')
-                except Exception as e:
-                    st.error(f'Prediction failed: {e}')
+            try:
+                prob = model.predict_proba(sample)[:, 1][0]
+                st.write(f'Predicted probability of attrition: {prob:.2%}')
+                st.write('Predicted class:', 'Yes' if prob > 0.5 else 'No')
+            except Exception as e:
+                st.error(f'Prediction failed: {e}')
 
     st.markdown('---')
     st.caption('Dashboard generated from employee_attrition_analysis_and_dashboard.py')
-
-
 # ========================
 # 9. CLI entrypoint
 # ========================
